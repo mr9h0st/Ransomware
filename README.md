@@ -37,11 +37,11 @@ Once the file is ready to be encrypted, a unique key & iv are generated for the 
 ### Encryption
 * Each encryption thread will run on a specific processor so that the cache use will be more efficient[^4].
 * To avoid corrupting the system after the encryption, some directories will be skipped:
-
+https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Encryptor/encryptor.c#L20-L28
 * Furthermore, some files will be skipped:
-
+https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Encryptor/encryptor.c#L30-L31
 * Finally, all files with the following extension will be skipped:
-
+https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Encryptor/encryptor.c#L33-L34
 * A random 32-byte array is generated and acts as the user's private key. using that, public and shared keys are generated. The public key will be written in the file metadata, while the SHA512 of the shared key will be the Key & IV for the HC-128 algorithm.
 * To avoid reading entire large files, the software divides files into 3 categories: Large (above `0x1400000`), Medium (above `0x500000`) and Small. Large and Medium files are divided into chunks so not all the file is encrypted. Small files are entirely encrypted.
 
@@ -51,10 +51,11 @@ Clone the repository.
 ## Development
 ### Ransomware Extension
 To change the ransomware extension, edit the following two files:
-
+https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Encryptor/encryptor.h#L12
+https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Decryptor/decryptor.h#L16
 ### Program Behaviour
 To change the program behaviour edit this file:
-
+https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Encryptor/debug.h#L6-L9
 * When the first is enabled (```DEBUG```), it will disable any execution of code that can harm the system. so volumes will not be mounted, files will not be encrypted and processes will not be stopped in an attempt to open a file.
 * When the second is enabled (```DEBUGMSG```), it will print debug messages.
 
@@ -72,9 +73,9 @@ To achieve the best speed, build the files using -O2 as gcc parameter.
 
 ## Generating Curve25519's Public-Private keys
 To set the public key, you will find its declaration at
-
+https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Encryptor/encryptor.c#L14-L17
 To set the private key, you will find its declaration at
-
+https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Decryptor/decryptor.c#L13-L16
 
 > [!NOTE]
 > The current public-private keys are valid and will encrypt/decrypt files.
