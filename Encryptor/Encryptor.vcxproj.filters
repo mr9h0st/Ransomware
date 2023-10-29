@@ -56,9 +56,6 @@
     <ClInclude Include="debug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="utility.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\crypt\crc32.h">
       <Filter>Header Files\crypt</Filter>
     </ClInclude>

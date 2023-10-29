@@ -12,8 +12,6 @@
 
 /* Max number of iterators. */
 #define MAX_ITERATOR_THREADS	26
-/* Ransomware extension. */
-#define RANSOMWARE_EXTENSION	L".rans"
 
 /* Size of block to read from a file. */
 #define READ_BLOCK_SIZE		0x100000i64

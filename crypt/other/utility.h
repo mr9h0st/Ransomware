@@ -1,6 +1,19 @@
 #pragma once
 
-#include "wsinternal.h"
+#include <Windows.h>
+#include <KnownFolders.h>
+
+/// <summary>
+/// Safe strcpy.
+/// </summary>
+/// <param name="a">Array to copy the data to.</param>
+/// <param name="s">Size of the array.</param>
+/// <param name="b">Array to copy from.</param>
+inline void sstrcpy(char* a, const size_t s, const char* b)
+{
+	for (size_t i = 0; i < s; i++)
+		a[i] = b[i];
+}
 
 /// <summary>
 /// Check if a value is in an array.
@@ -60,4 +73,24 @@ inline wchar_t* getFileName(const wchar_t* path)
 	}
 	
 	return p;
+}
+
+/// <summary>
+/// Get the desktop path.
+/// </summary>
+/// <returns>Desktop path, NULL if failed.</returns>
+inline wchar_t* getDesktopPath()
+{
+	wchar_t* path = NULL;
+	HRESULT result = SHGetKnownFolderPath(&FOLDERID_Desktop, 0, NULL, &path);
+	if (result == S_OK)
+	{
+		wchar_t* mpath = (wchar_t*)smalloc(MAX_PATH, sizeof(wchar_t));
+		lstrcpyW(mpath, path);
+
+		CoTaskMemFree(path);
+		return mpath;
+	}
+
+	return NULL;
 }

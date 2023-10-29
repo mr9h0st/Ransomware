@@ -13,18 +13,15 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\crypt">
-      <UniqueIdentifier>{838bec91-6a93-4688-82c0-84d66a6f0c70}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\crypt">
-      <UniqueIdentifier>{1d0b4876-dc65-4931-a7ca-0ae9fed7fd03}</UniqueIdentifier>
+      <UniqueIdentifier>{f3b29393-2d79-4d31-bd8f-b9fed4271a0b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\crypt">
+      <UniqueIdentifier>{f82657d5-f412-485f-b1b0-7def22316be0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="entry.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="decryptor.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\crypt\crc32.c">
@@ -33,24 +30,21 @@
     <ClCompile Include="..\crypt\curve25519.c">
       <Filter>Source Files\crypt</Filter>
     </ClCompile>
-    <ClCompile Include="..\crypt\hc128.c">
+    <ClCompile Include="..\crypt\sha512.c">
       <Filter>Source Files\crypt</Filter>
     </ClCompile>
-    <ClCompile Include="..\crypt\sha512.c">
+    <ClCompile Include="..\crypt\hc128.c">
       <Filter>Source Files\crypt</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="wsinternal.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="decryptor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\crypt\crc32.h">
       <Filter>Header Files\crypt</Filter>
     </ClInclude>
     <ClInclude Include="..\crypt\curve25519.h">
+      <Filter>Header Files\crypt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\crypt\sha512.h">
       <Filter>Header Files\crypt</Filter>
     </ClInclude>
     <ClInclude Include="..\crypt\ecrypt-config.h">
@@ -63,9 +57,6 @@
       <Filter>Header Files\crypt</Filter>
     </ClInclude>
     <ClInclude Include="..\crypt\ecrypt-sync.h">
-      <Filter>Header Files\crypt</Filter>
-    </ClInclude>
-    <ClInclude Include="..\crypt\sha512.h">
       <Filter>Header Files\crypt</Filter>
     </ClInclude>
   </ItemGroup>
