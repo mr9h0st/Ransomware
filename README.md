@@ -14,6 +14,7 @@ The symmetric encryption algorithm used[^2] is [HC-128](https://www.ecrypt.eu.or
 ### Pre-Encryption
 When launched, the program uses a mutex to ensure only one instance is running, Then if the process doesn't have admin privileges, it attempts to get it using UAC bypass. In addition, the software disables default errors, changes token privileges and denies access to its process.
 The program also mounts volumes to find devices that can be encrypted even though they cannot be accessed through the file explorer.
+Before the encryption starts, the software generates a unique public-private Curve25519. the public key will be used to encrypt files and the private key will be encrypted with the server's public key.
 
 ### Encryption
 After finding the amount of processors the CPU has, the software spawns that[^3] amount of threads whose job is to encrypt files, Then each available drive is iterated using a different thread to split the work between the iterators and achieve the best speed. The data is passed between the iterators and the encryptors using an [I/O Completion Port Object](https://learn.microsoft.com/en-us/windows/win32/fileio/i-o-completion-ports).
@@ -21,6 +22,9 @@ After finding the amount of processors the CPU has, the software spawns that[^3]
 Once the encryption thread receives a file, it attempts to open it. if it fails because other processes are using it, the program attempts to shut them down to get access to that file using the [Restart Manager](https://learn.microsoft.com/en-us/windows/win32/rstmgr/restart-manager-portal).
 
 Once the file is ready to be encrypted, a unique key & iv are generated for the HC-128 algorithm and the file is encrypted, Then the encrypted key & iv are stored at the end of the file as file metadata.
+
+### Decryption
+To decrypt the files, the victim must send the generated encrypted private key file[^4] to the attacker. The attacker will decrypt the private key using the **PrivateDecryptor** application with its unique private key [^5]. Once the key is decrypted, the attacker will send the decrypted private key to the victim, which will use the **Decrypt** application to decrypt the files.
 
 ## In-Depth
 ### Pre-Encryption
@@ -35,7 +39,7 @@ Once the file is ready to be encrypted, a unique key & iv are generated for the 
 * When a volume is found, it will be mounted **only if** it hasn't been mounted before and is larger than `0x40000000`. The mount location will be the first available drive, starting from `Z` all the way down to `A`.
 
 ### Encryption
-* Each encryption thread will run on a specific processor so that the cache use will be more efficient[^4].
+* Each encryption thread will run on a specific processor so that the cache use will be more efficient[^6].
 * To avoid corrupting the system after the encryption, some directories will be skipped:
 https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Encryptor/encryptor.c#L20-L28
 * Furthermore, some files will be skipped:
@@ -50,9 +54,8 @@ Clone the repository.
 
 ## Development
 ### Ransomware Extension
-To change the ransomware extension, edit the following two files:
-https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Encryptor/encryptor.h#L12
-https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Decryptor/decryptor.h#L16
+To change the ransomware extension, edit the following file:
+https://github.com/mr9h0st/Ransomware/blob/1f328ef352e553e46b0530e896e466e57d601b93/crypt/other/settings.h#L2
 ### Program Behaviour
 To change the program behaviour edit this file:
 https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Encryptor/debug.h#L6-L9
@@ -71,11 +74,11 @@ then you can freely run the ransomware on your system without it causing any har
 ### Speed
 To achieve the best speed, build the files using -O2 as gcc parameter.
 
-## Generating Curve25519's Public-Private keys
+## Generating Public-Private keys
 To set the public key, you will find its declaration at
-https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Encryptor/encryptor.c#L14-L17
+https://github.com/mr9h0st/Ransomware/blob/1f328ef352e553e46b0530e896e466e57d601b93/Encryptor/encryptor.c#L13-L16
 To set the private key, you will find its declaration at
-https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Decryptor/decryptor.c#L13-L16
+https://github.com/mr9h0st/Ransomware/blob/1f328ef352e553e46b0530e896e466e57d601b93/PrivateDecryptor/entry.c#L23-L26
 
 > [!NOTE]
 > The current public-private keys are valid and will encrypt/decrypt files.
@@ -96,4 +99,7 @@ It took the ransomware `7.32` minutes to encrypt `67.984 GB` on Windows 11 / Int
 [^1]: You can read more about this scheme here: https://medium.com/@tarcisioma/ransomware-encryption-techniques-696531d07bb9
 [^2]: Most ransomware choose RSA as the asymmetric encryption algorithm, but nowadays elliptic curve algorithms are better because they are faster on Key generation and encryption and don't have a plaintext size limit.
 [^3]: As suggested on Microsoft's website, to achieve better performance, we should create a thread for each processor: https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createthread#remarks
-[^4]: https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setthreadaffinitymask
+[^4]: Stored at `<Desktop>\pk.dat`. Name defined here:
+https://github.com/mr9h0st/Ransomware/blob/1f328ef352e553e46b0530e896e466e57d601b93/crypt/other/settings.h#L4
+[^5]: As described at Generating keys section, that is the private key.
+[^6]: https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setthreadaffinitymask
