@@ -14,6 +14,7 @@
 #include <AclAPI.h>
 #include <VersionHelpers.h>
 #include <RestartManager.h>
+#include <lmcons.h>
 
 #define NTDLL_DLL_NAME L"ntdll.dll"
 

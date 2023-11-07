@@ -1,8 +1,5 @@
 #pragma once
 
-#include <stdio.h>
-#include <stdarg.h>
-
 /* Enable/Disable encryption, volume mounting... */
 #define DEBUG
 /* Enable/Disable debug messages. */
@@ -10,22 +7,35 @@
 
 #ifdef DEBUGMSG
 /* Print a debug message. */
-#define dbgmsg(...) (ddbgmsg(__FUNCTION__, __LINE__, __VA_ARGS__))
-#else
-/* Print a debug message. */
-#define dbgmsg(...) { }
-#endif
+#define dbgmsg(...) (_sdprintf(__FUNCTION__, __LINE__, __VA_ARGS__))
+
+/* Print a debug message without its origin. */
+#define ndbgmsg(...) _sprintf(__VA_ARGS__)
 
 /* Print a debug message with a status whether it was sucessful. */
 #define dbgstatus(s, ...) dbgmsg(__VA_ARGS__);		\
-	printf(": %s\n", s ? "Success" : "Fail");		\
+	_sprintf(": %s\n", s ? "Success" : "Fail");
 
-/* Print a debug message with a status whether it was successful without its origin. */
-#define ndbgstatus(s, ...) printf(__VA_ARGS__);		\
-	printf(": %s\n", s ? "Success" : "Fail");		\
+/* Print a debug message with a status whether it was sucessful without its origin. */
+#define ndbgstatus(s, ...) _sprintf(__VA_ARGS__);	\
+	_sprintf(": %s\n", s ? "Success" : "Fail");
+#else
+#define dbgmsg(...)			{ }
+#define ndbgmsg(...)		{ }
+#define dbgstatus(s, ...)	{ }
+#define ndbgstatus(s, ...)	{ }
+#endif
 
-/* Print a debug message without its origin. */
-#define ndbgmsg(...) printf(__VA_ARGS__);
+/// <summary>
+/// Initialize the debug library.
+/// </summary>
+void dbginit();
+
+/// <summary>
+/// Print a message with a critical section.
+/// </summary>
+/// <param name="fmt">Format of the string.</param>
+void _sprintf(const char* fmt, ...);
 
 /// <summary>
 /// Print a debug message.
@@ -33,12 +43,9 @@
 /// <param name="function">Function that requested debug.</param>
 /// <param name="line">Line that requested debug.</param>
 /// <param name="fmt">Format of the string.</param>
-inline void ddbgmsg(const char* function, const unsigned long line, const char* fmt, ...)
-{
-	printf("[%s:%lu]\t", function, line);
-	
-	va_list va;
-	va_start(va, fmt);
-	vprintf(fmt, va);
-	va_end(va);
-}
+void _sdprintf(const char* function, const unsigned long line, const char* fmt, ...);
+
+/// <summary>
+/// Free the debug library.
+/// </summary>
+void dbgend();

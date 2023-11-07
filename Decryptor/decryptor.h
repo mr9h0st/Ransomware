@@ -2,11 +2,6 @@
 
 #include "wsinternal.h"
 
-#define _CRTDBG_MAP_ALLOC
-#include <stdio.h>
-#include <time.h>
-#include <crtdbg.h>
-
 /* Enable/Disable decryption. */
 #define DEBUG
 
@@ -19,24 +14,6 @@
 #define MEDIUM_FILE_SIZE	0x500000i64
 /* Min size of a file to be considered a large file. */
 #define LARGE_FILE_SIZE		0x1400000i64
-
-typedef struct PROG_KEYS
-{
-	BYTE hc256Key[32];
-	BYTE hc256Vector[32];
-} Keys_t;
-
-typedef struct PROG_SESSION
-{
-	BYTE curve25519Shared[32];
-	BYTE curve25519Private[32];
-} Session_t;
-
-typedef struct FILE_METADATA
-{
-	BYTE curve25519Public[32];
-	DWORD xcrc32Hash;
-} FileMetadata_t;
 
 /// <summary>
 /// Decrypt all drives.

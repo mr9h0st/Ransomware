@@ -27,12 +27,6 @@ cleanup:
 }
 
 /// <summary>
-/// Check if the current user is related to the administrators group.
-/// </summary>
-/// <returns>True if it is related, FALSE, otherwise.</returns>
-BOOL isRelatedToAdminGroup();
-
-/// <summary>
 /// Attempt to get admin privileges using UAC bypass.
 /// </summary>
 /// <returns>True if got admin, FALSE, otherwise.</returns>

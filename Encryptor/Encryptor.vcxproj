@@ -76,6 +76,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\Users\noamh\Documents\Stuff\Projects\Ransomware\crypt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <Optimization>MaxSpeed</Optimization>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -104,7 +107,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <AdditionalIncludeDirectories>C:\Users\noamh\Documents\Stuff\Projects\Ransomware\crypt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -134,6 +137,9 @@
     <ClCompile Include="..\crypt\curve25519.c" />
     <ClCompile Include="..\crypt\hc128.c" />
     <ClCompile Include="..\crypt\sha512.c" />
+    <ClCompile Include="anti.c" />
+    <ClCompile Include="antivm.c" />
+    <ClCompile Include="debug.c" />
     <ClCompile Include="encryptor.c" />
     <ClCompile Include="entry.c" />
     <ClCompile Include="pre.c" />
@@ -147,10 +153,15 @@
     <ClInclude Include="..\crypt\ecrypt-portable.h" />
     <ClInclude Include="..\crypt\ecrypt-sync.h" />
     <ClInclude Include="..\crypt\sha512.h" />
+    <ClInclude Include="anti.h" />
+    <ClInclude Include="antidbg.h" />
+    <ClInclude Include="antidump.h" />
+    <ClInclude Include="antivm.h" />
     <ClInclude Include="debug.h" />
     <ClInclude Include="encryptor.h" />
     <ClInclude Include="pre.h" />
     <ClInclude Include="uac.h" />
+    <ClInclude Include="util.h" />
     <ClInclude Include="wsinternal.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

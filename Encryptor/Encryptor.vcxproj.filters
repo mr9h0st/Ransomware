@@ -19,6 +19,12 @@
     <Filter Include="Source Files\crypt">
       <UniqueIdentifier>{3a42ddc7-5e82-455f-ab37-c02cb1c80ccb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\antirun">
+      <UniqueIdentifier>{7c5b55a1-d1a8-4dc2-ac38-3f5b21b516f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\antirun">
+      <UniqueIdentifier>{1dd21148-c0b5-4ac9-864d-b3d4d4c77ab7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="entry.c">
@@ -44,6 +50,15 @@
     </ClCompile>
     <ClCompile Include="pre.c">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="anti.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="antivm.c">
+      <Filter>Source Files\antirun</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -82,6 +97,21 @@
     </ClInclude>
     <ClInclude Include="pre.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="anti.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="antidbg.h">
+      <Filter>Header Files\antirun</Filter>
+    </ClInclude>
+    <ClInclude Include="antivm.h">
+      <Filter>Header Files\antirun</Filter>
+    </ClInclude>
+    <ClInclude Include="antidump.h">
+      <Filter>Header Files\antirun</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

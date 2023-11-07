@@ -11,6 +11,9 @@ This project is open source, feel free to study and contribute.
 This software uses the symmetric & asymmetric scheme[^1] to encrypt files.
 The symmetric encryption algorithm used[^2] is [HC-128](https://www.ecrypt.eu.org/stream/e2-hc128.html), and the asymmetric one is [Curve25519](http://cr.yp.to/ecdh.html)
 
+### Evasion
+The program avoids local and remote debuggers. To avoid virtual machines it checks for user input, running processes, services, and hardware information.
+
 ### Pre-Encryption
 When launched, the program uses a mutex to ensure only one instance is running, Then if the process doesn't have admin privileges, it attempts to get it using UAC bypass. In addition, the software disables default errors, changes token privileges and denies access to its process.
 The program also mounts volumes to find devices that can be encrypted even though they cannot be accessed through the file explorer.
@@ -27,6 +30,24 @@ Once the file is ready to be encrypted, a unique key & iv are generated for the 
 To decrypt the files, the victim must send the generated encrypted private key file[^4] to the attacker. The attacker will decrypt the private key using the **PrivateDecryptor** application with its unique private key [^5]. Once the key is decrypted, the attacker will send the decrypted private key to the victim, which will use the **Decrypt** application to decrypt the files.
 
 ## In-Depth
+### Evasion
+* Local debugging is checked using IsDebuggerPresent **OR** PEB->BeingDebugged.
+* Remote debugging is checked using CheckRemoteDebuggerPresent WinAPI function.
+* Debugging is also checked using Hardware breakpoint checks.
+
+To check for VMs:
+* Mouse movement in 10 seconds.
+* Accelerated sleep.
+* CPU fans[^7].
+* Blacklisted loaded DLLs.
+* Blacklisted usernames & hostnames.
+* Number of CPU cores (== 1).
+* RAM size (<= 4GB).
+* Disk size (<= 80GB).
+* Blacklisted vendor ID's.
+* Existing files & registries.
+* Running processes & services.
+
 ### Pre-Encryption
 * The one instance mutex's name is `ef223080-f09c-413a-89db-62d675d90f56`.
 * the process masquerades explorer.exe, then performs UAC bypass using ColorDataProxy/CCMMLoaUtil COM interfaces.
@@ -89,7 +110,7 @@ https://github.com/mr9h0st/Ransomware/blob/1f328ef352e553e46b0530e896e466e57d601
 - [x] Deny access to the ransomware's process.
 - [ ] Persistence in case of a system shutdown.
 - [x] Mount volumes.
-- [ ] Avoid debuggers & anti-viruses.
+- [x] Avoid debuggers & virtual machines.
 - [ ] Host discovery & Network shares.
 - [x] Network drives.
 
@@ -103,3 +124,4 @@ It took the ransomware `7.32` minutes to encrypt `67.984 GB` on Windows 11 / Int
 https://github.com/mr9h0st/Ransomware/blob/1f328ef352e553e46b0530e896e466e57d601b93/crypt/other/settings.h#L4
 [^5]: As described at Generating keys section, that is the private key.
 [^6]: https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setthreadaffinitymask
+[^7]: Sandboxes and Virtual machines will fail to return data about the CPU's fans while real operating systems will return information.

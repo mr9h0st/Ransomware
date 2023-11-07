@@ -7,18 +7,6 @@
 #include "sha512.h"
 #include "crc32.h"
 
-typedef struct FILE_METADATA
-{
-    BYTE curve25519Public[32];
-    DWORD xcrc32Hash;
-} FileMetadata_t;
-
-typedef struct PROG_KEYS
-{
-    BYTE hc256Key[32];
-    BYTE hc256Vector[32];
-} Keys_t;
-
 /* Private key to decrypt the private key with. */
 static const BYTE PRIVATE_KEY[32] = { 0x88, 0xe8, 0xa7, 0x81, 0xe2, 0x6d, 0x7b,
     0xd3, 0x70, 0x4c, 0x0c, 0x69, 0x07, 0x0c, 0xf0, 0xd5, 0x58, 0xbc, 0xfb,

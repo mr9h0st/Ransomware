@@ -2,10 +2,6 @@
 
 #include "wsinternal.h"
 
-#define _CRTDBG_MAP_ALLOC
-#include <time.h>
-#include <crtdbg.h>
-
 /* Max number of iterators. */
 #define MAX_ITERATOR_THREADS	26
 
@@ -17,24 +13,6 @@
 #define LARGE_FILE_SIZE		0x1400000i64
 /* Min size of a volume to be mounted */
 #define VOLUME_SIZE			0x40000000ui64
-
-typedef struct PROG_KEYS
-{
-	BYTE hc256Key[32];
-	BYTE hc256Vector[32];
-} Keys_t;
-
-typedef struct PROG_SESSION
-{
-	BYTE curve25519Shared[32];
-	BYTE curve25519Private[32];
-} Session_t;
-
-typedef struct FILE_METADATA
-{
-	BYTE curve25519Public[32];
-	DWORD xcrc32Hash;
-} FileMetadata_t;
 
 /// <summary>
 /// Mount all valid volumes to be encrypted later.
