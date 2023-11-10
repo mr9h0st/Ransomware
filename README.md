@@ -50,8 +50,10 @@ To check for VMs:
 
 ### Persistence
 There are two ways the program uses for persistence.
-* Task Scheduler (System)
+* Task Scheduler (System task with highest privileges)
+https://github.com/mr9h0st/Ransomware/blob/51dd1e8211696373b7c85701a27fe318380bb157/Encryptor/persistence.c#L21
 * Registry (Autorun)
+https://github.com/mr9h0st/Ransomware/blob/51dd1e8211696373b7c85701a27fe318380bb157/Encryptor/persistence.c#L26
 
 ### Pre-Encryption
 * The one instance mutex's name is `ef223080-f09c-413a-89db-62d675d90f56`.
@@ -77,6 +79,9 @@ https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963
 
 ### Extra
 The software modifies the Registry so that the default icon of the encrypted files will be a custom one.
+The .ico file is embedded in the software and located at https://github.com/mr9h0st/Ransomware/blob/51dd1e8211696373b7c85701a27fe318380bb157/Encryptor/pre.c#L10.
+> [!IMPORTANT]
+> The file is embedded as hex array.
 
 # Getting Started
 Clone the repository.
