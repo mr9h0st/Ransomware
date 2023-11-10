@@ -107,7 +107,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <AdditionalIncludeDirectories>C:\Users\noamh\Documents\Stuff\Projects\Ransomware\crypt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -142,6 +142,7 @@
     <ClCompile Include="debug.c" />
     <ClCompile Include="encryptor.c" />
     <ClCompile Include="entry.c" />
+    <ClCompile Include="persistence.c" />
     <ClCompile Include="pre.c" />
     <ClCompile Include="uac.c" />
   </ItemGroup>
@@ -159,6 +160,7 @@
     <ClInclude Include="antivm.h" />
     <ClInclude Include="debug.h" />
     <ClInclude Include="encryptor.h" />
+    <ClInclude Include="persistence.h" />
     <ClInclude Include="pre.h" />
     <ClInclude Include="uac.h" />
     <ClInclude Include="util.h" />

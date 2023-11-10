@@ -2,7 +2,7 @@
 
 #include "wsinternal.h"
 
-/* Enable/Disable decryption. */
+/* Enable/Disable process shutdown. */
 #define DEBUG
 
 /* Max number of iterators. */

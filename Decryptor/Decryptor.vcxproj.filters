@@ -39,6 +39,9 @@
     <ClCompile Include="..\crypt\sha512.c">
       <Filter>Source Files\crypt</Filter>
     </ClCompile>
+    <ClCompile Include="pre.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="wsinternal.h">
@@ -67,6 +70,9 @@
     </ClInclude>
     <ClInclude Include="..\crypt\sha512.h">
       <Filter>Header Files\crypt</Filter>
+    </ClInclude>
+    <ClInclude Include="pre.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

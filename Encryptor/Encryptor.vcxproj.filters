@@ -60,6 +60,9 @@
     <ClCompile Include="antivm.c">
       <Filter>Source Files\antirun</Filter>
     </ClCompile>
+    <ClCompile Include="persistence.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="wsinternal.h">
@@ -112,6 +115,9 @@
     </ClInclude>
     <ClInclude Include="antidump.h">
       <Filter>Header Files\antirun</Filter>
+    </ClInclude>
+    <ClInclude Include="persistence.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

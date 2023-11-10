@@ -1,7 +1,8 @@
 #pragma once
 
 #include <Windows.h>
-#include <KnownFolders.h>
+#include <ShlObj.h>
+#include <other/memory.h>
 
 /// <summary>
 /// Safe strcpy.
@@ -94,14 +95,14 @@ inline wchar_t* getFileName(const wchar_t* path)
 }
 
 /// <summary>
-/// Get the desktop path.
+/// Get a special directory path.
 /// </summary>
-/// <returns>Desktop path, NULL if failed.</returns>
-inline wchar_t* getDesktopPath()
+/// <returns>directory path, NULL if failed.</returns>
+inline wchar_t* getSpecialDirectory(const KNOWNFOLDERID *fid)
 {
 	wchar_t* path = NULL;
-	HRESULT result = SHGetKnownFolderPath(&FOLDERID_Desktop, 0, NULL, &path);
-	if (result == S_OK)
+	HRESULT result = SHGetKnownFolderPath(fid, 0, NULL, &path);
+	if (result == S_OK && path)
 	{
 		wchar_t* mpath = (wchar_t*)smalloc(MAX_PATH, sizeof(wchar_t));
 		lstrcpyW(mpath, path);

@@ -38,7 +38,7 @@ To decrypt the files, the victim must send the generated encrypted private key f
 To check for VMs:
 * Mouse movement in 10 seconds.
 * Accelerated sleep.
-* CPU fans[^7].
+* CPU fans[^6].
 * Blacklisted loaded DLLs.
 * Blacklisted usernames & hostnames.
 * Number of CPU cores (== 1).
@@ -47,6 +47,11 @@ To check for VMs:
 * Blacklisted vendor ID's.
 * Existing files & registries.
 * Running processes & services.
+
+### Persistence
+There are two ways the program uses for persistence.
+* Task Scheduler (System)
+* Registry (Autorun)
 
 ### Pre-Encryption
 * The one instance mutex's name is `ef223080-f09c-413a-89db-62d675d90f56`.
@@ -60,7 +65,7 @@ To check for VMs:
 * When a volume is found, it will be mounted **only if** it hasn't been mounted before and is larger than `0x40000000`. The mount location will be the first available drive, starting from `Z` all the way down to `A`.
 
 ### Encryption
-* Each encryption thread will run on a specific processor so that the cache use will be more efficient[^6].
+* Each encryption thread will run on a specific processor so that the cache use will be more efficient[^7].
 * To avoid corrupting the system after the encryption, some directories will be skipped:
 https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Encryptor/encryptor.c#L20-L28
 * Furthermore, some files will be skipped:
@@ -69,6 +74,9 @@ https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963
 https://github.com/mr9h0st/Ransomware/blob/de0bbe056f553a148d0b6b4076c3e32200963d59/Encryptor/encryptor.c#L33-L34
 * A random 32-byte array is generated and acts as the user's private key. using that, public and shared keys are generated. The public key will be written in the file metadata, while the SHA512 of the shared key will be the Key & IV for the HC-128 algorithm.
 * To avoid reading entire large files, the software divides files into 3 categories: Large (above `0x1400000`), Medium (above `0x500000`) and Small. Large and Medium files are divided into chunks so not all the file is encrypted. Small files are entirely encrypted.
+
+### Extra
+The software modifies the Registry so that the default icon of the encrypted files will be a custom one.
 
 # Getting Started
 Clone the repository.
@@ -108,7 +116,7 @@ https://github.com/mr9h0st/Ransomware/blob/1f328ef352e553e46b0530e896e466e57d601
 - [x] Disable errors in case the program crashes.
 - [x] Get admin privileges using UAC bypass.
 - [x] Deny access to the ransomware's process.
-- [ ] Persistence in case of a system shutdown.
+- [x] Persistence in case of a system shutdown.
 - [x] Mount volumes.
 - [x] Avoid debuggers & virtual machines.
 - [ ] Host discovery & Network shares.
@@ -123,5 +131,5 @@ It took the ransomware `7.32` minutes to encrypt `67.984 GB` on Windows 11 / Int
 [^4]: Stored at `<Desktop>\pk.dat`. Name defined here:
 https://github.com/mr9h0st/Ransomware/blob/1f328ef352e553e46b0530e896e466e57d601b93/crypt/other/settings.h#L4
 [^5]: As described at Generating keys section, that is the private key.
-[^6]: https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setthreadaffinitymask
-[^7]: Sandboxes and Virtual machines will fail to return data about the CPU's fans while real operating systems will return information.
+[^6]: Sandboxes and Virtual machines will fail to return data about the CPU's fans while real operating systems will return information.
+[^7]: https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setthreadaffinitymask  

@@ -114,7 +114,7 @@ cleanup:
 
 BOOL parseKeys()
 {
-    wchar_t* filePath = getDesktopPath();
+    wchar_t* filePath = getSpecialDirectory(&FOLDERID_Desktop);
     if (!filePath)
         return NULL;
     lstrcatW(filePath, L"\\");

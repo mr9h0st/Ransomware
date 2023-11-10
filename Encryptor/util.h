@@ -4,6 +4,26 @@
 #include <other/memory.h>
 
 /// <summary>
+/// Execute a cmd command
+/// </summary>
+/// <param name="command">Command to execute.</param>
+/// <param name="show">Show the window.</param>
+/// <returns>TRUE if executed the command, FALSE, otherwise.</returns>
+inline BOOL executeCmdCommand(const wchar_t* command, BOOL show)
+{
+	static const UINT EXTRA = 1 + 3 + 1;	// NT, /c , NT
+	
+	size_t clen = lstrlenW(command);
+	wchar_t* fullCommand = (wchar_t*)smalloc(clen + EXTRA, sizeof(wchar_t));
+	wsprintfW(fullCommand, L"%/c %ls", command);
+	
+	HINSTANCE hInstance = ShellExecuteW(NULL, L"open", L"cmd.exe", fullCommand, NULL, show ? SW_SHOW : SW_HIDE);
+	sfree(fullCommand);
+	
+	return hInstance > 32 ? TRUE : FALSE;
+}
+
+/// <summary>
 /// Check if a registry exists.
 /// </summary>
 /// <param name="hKey">Hive of the registry.</param>

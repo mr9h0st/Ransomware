@@ -25,7 +25,7 @@ void _sprintf(const char* fmt, ...)
 void _sdprintf(const char* function, const unsigned long line, const char* fmt, ...)
 {
 	EnterCriticalSection(&g_cs);
-
+	
 	printf("[%s:%lu]\t", function, line);
 	va_list va;
 	va_start(va, fmt);

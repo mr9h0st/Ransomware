@@ -15,6 +15,18 @@
 #define VOLUME_SIZE			0x40000000ui64
 
 /// <summary>
+/// Get the servers public key.
+/// </summary>
+/// <returns>Servers public key</returns>
+wchar_t* getPublicKey();
+
+/// <summary>
+/// Initialize required data before encryption.
+/// </summary>
+/// <returns>True if successfully initialized, FALSE, otherwise.</returns>
+BOOL preEncryptionInitialization();
+
+/// <summary>
 /// Mount all valid volumes to be encrypted later.
 /// </summary>
 /// <returns>TRUE if successfully mount available volumes, FALSE, otherwise.</returns>
